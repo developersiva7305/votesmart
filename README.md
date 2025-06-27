@@ -55,8 +55,8 @@
 
 ### Clone the repo
 
-git clone https://github.com/your-username/votesmart-ai.git
-cd votesmart-ai
+git clone https://github.com/your-username/votesmart.git
+cd votesmart
 
 
 ### Backend Setup
